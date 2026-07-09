@@ -122,13 +122,4 @@ window.MOCK_REPORT = {
   ]
 };
 
-function fillMockImages() {
-  [window.MOCK_REPORT.newViral, window.MOCK_REPORT.lowFanViral].forEach((arr) => {
-    arr.forEach((it) => {
-      const seed = encodeURIComponent(it.title.slice(0, 12));
-      it.image = `https://picsum.photos/seed/${seed}/400/500`;
-    });
-  });
-}
-fillMockImages();
 
