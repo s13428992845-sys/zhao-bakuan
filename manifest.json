@@ -1,0 +1,12 @@
+{
+  "name": "找爆款",
+  "short_name": "找爆款",
+  "description": "自媒体低粉爆款追踪",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f5f6fa",
+  "theme_color": "#ff5e62",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

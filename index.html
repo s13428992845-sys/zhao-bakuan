@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>找爆款</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="找爆款" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="hero">
+      <div class="hero-badge">爆款追踪</div>
+      <h1 class="hero-title">找爆款</h1>
+      <p class="hero-desc">输入你的赛道，一键生成近期爆款报告</p>
+    </header>
+
+    <section class="controls card">
+      <input id="track" class="input" placeholder="赛道，如：自媒体AI工具" value="自媒体AI工具" />
+      <input id="date" class="input" type="date" />
+      <button id="genBtn" class="gen-btn">生成爆款报告</button>
+    </section>
+
+    <div id="sourceTag" class="source-tag">数据来源：示例数据（在 config.js 配置后切换为真实数据）</div>
+
+    <div id="loading" class="loading hidden">生成中…</div>
+    <div id="error" class="error hidden"></div>
+
+    <div id="content" class="hidden">
+      <section class="card">
+        <div class="card-title">近期热门选题方向</div>
+        <div id="topics"></div>
+        <div class="card-sub">近期哪些选题更火，方便你做方向评估</div>
+      </section>
+
+      <div class="tabs">
+        <div class="tab tab-active" data-tab="new">新增爆款</div>
+        <div class="tab" data-tab="low">低粉爆款</div>
+      </div>
+      <div class="tab-hint" id="tabHint"></div>
+
+      <div id="list" class="list"></div>
+      <div class="footer-tip">点击卡片查看案例拆解 / 评论热议 / 选题推荐</div>
+    </div>
+  </div>
+
+  <!-- 详情弹窗 -->
+  <div id="modal" class="modal-mask hidden">
+    <div class="modal">
+      <button class="modal-close" id="modalClose">×</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+      <script src="mock.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
