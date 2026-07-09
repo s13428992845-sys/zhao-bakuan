@@ -38,7 +38,7 @@ function currentList() {
   return (r[key] || []).map((it, i) => ({ ...it, rank: i + 1, id: (state.tab === 'new' ? 'n' : 'l') + (i + 1) }));
 }
 
-/* 封面：有真实图片链接时显示图片，否则用渐变+图标占位 */
+/* 封面/头像：有真实图片链接时显示图片，否则用渐变+图标占位 */
 const EMOJI_MAP = {
   '酒吧': '🍸', '清吧': '🥃', '酒馆': '🍺', '精酿': '🍻', '夜生活': '🌃',
   '美食': '🍜', '餐厅': '🍽️', '探店': '🍴', '火锅': '🍲', '咖啡': '☕', '奶茶': '🧋',
@@ -60,11 +60,43 @@ function coverBg(it) {
   return `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`;
 }
 
-function coverHTML(it, cls) {
-  const inner = it.image
-    ? `<img src="${esc(it.image)}" alt="" onerror="this.remove()">`
-    : `<span class="cover-emoji">${coverEmoji(it)}</span>`;
-  return `<div class="${cls}" style="background:${coverBg(it)}">${inner}</div>`;
+function avatarColor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return PALETTE[Math.abs(hash) % PALETTE.length];
+}
+
+const LINK_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+const HEART_ICON = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
+
+function coverFallbackHTML(it) {
+  return `<span class="cover-emoji">${coverEmoji(it)}</span>`;
+}
+
+function coverCardHTML(it) {
+  const img = it.image ? `<img src="${esc(it.image)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('noimg')">` : '';
+  const play = it.format === 'video' ? `<div class="cover-play"><span class="play-icon">▶</span><span>视频</span></div>` : '';
+  const link = it.sourceUrl ? `<a class="cover-link" href="${esc(it.sourceUrl)}" target="_blank" rel="noopener" aria-label="打开原帖">${LINK_ICON}</a>` : '';
+  const rank = `<div class="cover-rank ${it.rank <= 3 ? 'top' : ''}">${it.rank}</div>`;
+  return `
+    <div class="cover-card ${it.image ? '' : 'noimg'}" style="${it.image ? '' : 'background:' + coverBg(it)}">
+      ${img}
+      <div class="cover-fallback">${coverFallbackHTML(it)}</div>
+      ${rank}
+      ${link}
+      ${play}
+    </div>
+  `;
+}
+
+function coverModalHTML(it) {
+  const img = it.image ? `<img src="${esc(it.image)}" alt="" onerror="this.parentElement.classList.add('noimg')">` : '';
+  return `
+    <div class="m-cover ${it.image ? '' : 'noimg'}" style="${it.image ? '' : 'background:' + coverBg(it)}">
+      ${img}
+      <div class="cover-fallback">${coverFallbackHTML(it)}</div>
+    </div>
+  `;
 }
 
 function renderList() {
@@ -75,24 +107,22 @@ function renderList() {
 
   $('#list').innerHTML = list.map((it) => `
     <div class="item" data-id="${it.id}">
-      <div class="item-rank ${it.rank <= 3 ? 'top' : ''}">${it.rank}</div>
-      ${coverHTML(it, 'item-cover')}
-      <div class="item-main">
-        <div class="item-title">${esc(it.title)}</div>
-        <div class="item-meta">
-          <span class="badge badge-${it.format}">${it.format === 'video' ? '视频' : '图文'}</span>
-          <span class="item-author">${esc(it.author)}</span>
-          ${it.fans ? `<span class="item-fans">${esc(it.fans)}粉</span>` : ''}
+      ${coverCardHTML(it)}
+      <div class="item-title">${esc(it.title)}</div>
+      <div class="item-footer">
+        <div class="item-author">
+          <div class="item-avatar" style="background:${avatarColor(it.author)}">${it.author.charAt(0)}</div>
+          <span class="item-author-name">${esc(it.author)}</span>
         </div>
-      </div>
-      <div class="item-right">
-        <div class="heat">🔥 ${esc(it.heat)}</div>
-        <div class="arrow">›</div>
+        <div class="item-likes">${HEART_ICON}<span>${esc(it.heat)}</span></div>
       </div>
     </div>`).join('');
 
   document.querySelectorAll('#list .item').forEach((el) => {
     el.addEventListener('click', () => openDetail(el.dataset.id));
+  });
+  document.querySelectorAll('.cover-link').forEach((el) => {
+    el.addEventListener('click', (e) => e.stopPropagation());
   });
 }
 
@@ -102,7 +132,7 @@ function openDetail(id) {
   state.active = item;
 
   $('#modalBody').innerHTML = `
-    ${coverHTML(item, 'm-cover')}
+    ${coverModalHTML(item)}
     <div class="m-head">
       <div class="m-badges">
         <span class="badge badge-${item.format}">${item.format === 'video' ? '视频' : '图文'}</span>
