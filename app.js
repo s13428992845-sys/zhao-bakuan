@@ -305,6 +305,10 @@ JSON结构如下：
   let content = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '';
   // 去掉可能的 markdown 代码块包裹
   content = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?\s*```\s*$/i, '').trim();
+  // 兜底：从内容中提取最外层的 { ... } 作为 JSON（防止模型在前后多说废话）
+  const first = content.indexOf('{');
+  const last = content.lastIndexOf('}');
+  if (first >= 0 && last > first) content = content.slice(first, last + 1);
   return JSON.parse(content);
 }
 
