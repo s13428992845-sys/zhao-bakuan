@@ -69,6 +69,13 @@ function avatarColor(name) {
 const LINK_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
 const HEART_ICON = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
 
+/* 根据标题/话题生成小红书搜索链接（因为 AI 没有真实帖子链接） */
+function xiaohongshuSearchUrl(item) {
+  const q = encodeURIComponent(item.title || item.topic || item.author || '');
+  return `https://www.xiaohongshu.com/search_result?keyword=${q}`;
+}
+
+
 function coverFallbackHTML(it) {
   return `<span class="cover-emoji">${coverEmoji(it)}</span>`;
 }
@@ -76,7 +83,7 @@ function coverFallbackHTML(it) {
 function coverCardHTML(it) {
   const img = it.image ? `<img src="${esc(it.image)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('noimg')">` : '';
   const play = it.format === 'video' ? `<div class="cover-play"><span class="play-icon">▶</span><span>视频</span></div>` : '';
-  const link = it.sourceUrl ? `<a class="cover-link" href="${esc(it.sourceUrl)}" target="_blank" rel="noopener" aria-label="打开原帖">${LINK_ICON}</a>` : '';
+  const link = `<a class="cover-link" href="${esc(xiaohongshuSearchUrl(it))}" target="_blank" rel="noopener" aria-label="去小红书搜索">${LINK_ICON}</a>`;
   const rank = `<div class="cover-rank ${it.rank <= 3 ? 'top' : ''}">${it.rank}</div>`;
   return `
     <div class="cover-card ${it.image ? '' : 'noimg'}" style="${it.image ? '' : 'background:' + coverBg(it)}">
@@ -169,11 +176,11 @@ function openDetail(id) {
       </div>
     </div>
 
-    <button class="copy-btn" id="openBtn">打开原帖 ↗</button>
-    <div class="action-tip">Web 端可直接跳转原帖（已新开标签页打开）</div>
+    <button class="copy-btn" id="openBtn">去小红书搜索 ↗</button>
+    <div class="action-tip">AI 没有真实原帖链接，这里会跳转到小红书搜索该标题</div>
   `;
 
-  $('#openBtn').addEventListener('click', () => window.open(item.sourceUrl, '_blank'));
+  $('#openBtn').addEventListener('click', () => window.open(xiaohongshuSearchUrl(item), '_blank'));
   show($('#modal'));
 }
 
