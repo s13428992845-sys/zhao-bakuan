@@ -1,6 +1,21 @@
-/* 可选配置：把本文件复制为 config.js 并填入你的 Coze 凭证，网页会用真实数据替换示例数据。
-   注意：前端直连 Coze 会把 PAT 暴露给浏览器，仅限你自己/信任的人使用，不要公开分发。
-   留空或删除 config.js 时，网页自动使用内置示例数据（打开即用）。 */
+/* 可选配置：把本文件复制为 config.js 并填入 API Key，网页会用真实数据替换示例数据。
+   注意：前端直连会把 Key 暴露给浏览器，仅限你自己/信任的人使用，不要公开分发。
+   留空或删除 config.js 时，网页自动使用内置示例数据（打开即用）。
+
+   -- DeepSeek（推荐，最简单）--
+   1. 打开 https://platform.deepseek.com ，手机号注册
+   2. 顶部 API Keys → 创建 → 复制 sk-xxxx
+   3. 填入下方 DEEPSEEK_CONFIG.API_KEY
+
+   -- Coze（备选，需专业版）--
+   4. 填入 COZE_CONFIG.PAT 和 WORKFLOW_ID */
+
+// ---- DeepSeek ----
+window.DEEPSEEK_CONFIG = {
+  API_KEY: ""   // 粘贴你的 sk-xxxx
+};
+
+// ---- Coze（备选）----
 window.COZE_CONFIG = {
   PAT: "",                 // 你的 Coze 个人访问令牌
   WORKFLOW_ID: "",         // 工作流 ID

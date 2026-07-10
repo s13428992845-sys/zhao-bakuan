@@ -204,18 +204,26 @@ async function generate() {
     const forceMock = params.has('mock');
     let report;
 
-    // 默认使用内置示例数据，打开网页即可用、无需任何后端。
-    // 仅当存在 config.js 且填了 PAT 时，才尝试直连 Coze（失败自动回退示例）。
-    if (!forceMock && window.COZE_CONFIG && window.COZE_CONFIG.PAT) {
+    // 优先级：DeepSeek > Coze > 示例数据
+    if (!forceMock && window.DEEPSEEK_CONFIG && window.DEEPSEEK_CONFIG.API_KEY) {
+      try {
+        report = await callDeepSeek(track);
+        setSource(true, 'DeepSeek');
+      } catch (e) {
+        console.warn('DeepSeek 调用失败：', e);
+        report = null;
+      }
+    }
+    if (!report && !forceMock && window.COZE_CONFIG && window.COZE_CONFIG.PAT) {
       try {
         report = await callCoze(track, date);
-        setSource(true);
+        setSource(true, 'Coze');
       } catch (e) {
         console.warn('Coze 调用失败，已回退到示例数据：', e);
-        report = window.MOCK_REPORT;
-        setSource(false);
+        report = null;
       }
-    } else {
+    }
+    if (!report) {
       report = window.MOCK_REPORT;
       setSource(false);
     }
@@ -233,14 +241,74 @@ async function generate() {
   }
 }
 
-function setSource(isLive) {
+function setSource(isLive, provider) {
   const el = $('#sourceTag');
   if (!el) return;
-  el.textContent = isLive ? '数据来源：Coze 实时生成' : '数据来源：示例数据（在 config.js 配置后切换为真实数据）';
-  el.classList.toggle('live', isLive);
+  if (isLive) {
+    el.textContent = '数据来源：' + (provider || 'AI') + ' 实时生成';
+    el.classList.add('live');
+  } else {
+    el.textContent = '数据来源：示例数据（配置 API Key 后切换为真实数据）';
+    el.classList.remove('live');
+  }
 }
 
-/* 可选：直连 Coze（仅个人使用，PAT 会暴露在浏览器中） */
+/* DeepSeek：填入 API Key 后即可直连，新用户有免费额度 */
+async function callDeepSeek(track) {
+  const prompt = `你是一个小红书爆款内容分析专家。请分析「${track}」赛道，生成一份爆款报告。严格输出纯JSON，不要加任何额外文字、注释或markdown标记。
+
+JSON结构如下：
+{
+  "trackInfo": {"name":"${track}赛道","desc":"简洁的一句话描述，体现该赛道当前趋势","updateDate":"${new Date().toISOString().slice(0, 10)}"},
+  "topicTypes": [{"name":"子话题1","percent":45},{"name":"子话题2","percent":25},{"name":"子话题3","percent":15},{"name":"子话题4","percent":10},{"name":"子话题5","percent":5}],
+  "newViral": [{
+    "format":"video或image",
+    "title":"标题（真实感强的小红书标题风格）",
+    "author":"作者名",
+    "heat":"热度如2.4w或1.8w",
+    "topic":"所属话题",
+    "breakdown":["拆解点1：说明选题为什么火","拆解点2：分析内容结构和技巧"],
+    "hotComments":[{"user":"用户名","text":"评论内容","like":"点赞数如1200"}],
+    "topicRecommend":["可复制的选题1","可复制的选题2","可复制的选题3"],
+    "sourceUrl":"https://www.xiaohongshu.com/explore/example"
+  }],
+  "lowFanViral": [{"format":"video或image","title":"...","author":"...","fans":"粉丝数如420","heat":"...","topic":"...","breakdown":[...],"hotComments":[...],"topicRecommend":[...],"sourceUrl":"..."}]
+}
+
+要求：
+- topicTypes：5个，百分比加起来必须等于100
+- newViral：10条近期高热度爆款，每条2条breakdown、2条hotComments、3条topicRecommend
+- lowFanViral：10条低粉(<1000粉)爆款，结构和newViral一样
+- 标题要有小红书风格，像真实帖子标题
+- 热度用w表示万`;
+
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + window.DEEPSEEK_CONFIG.API_KEY
+    },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 8192,
+      temperature: 0.8
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error('DeepSeek 返回错误 HTTP ' + res.status + ': ' + err.slice(0, 200));
+  }
+
+  const j = await res.json();
+  let content = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '';
+  // 去掉可能的 markdown 代码块包裹
+  content = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?\s*```\s*$/i, '').trim();
+  return JSON.parse(content);
+}
+
+/* Coze（可选保留，需 PAT 令牌） */
 async function callCoze(track, date) {
   const base = (window.COZE_CONFIG.BASE || 'https://api.coze.cn').replace(/\/$/, '');
   const res = await fetch(`${base}/v1/workflow/run`, {
