@@ -6,6 +6,6 @@ window.DEEPSEEK_CONFIG = {
 // Coze（优先，获取真实小红书数据）
 window.COZE_CONFIG = {
   PAT: "pat_dW2U9YBj21kFug3Cth8laW30HVrCUzycTMJ6BccF0Rbh10JgZ9ZU1foEKT2dv6pT",
-  WORKFLOW_ID: "7642614901147549732",
+  WORKFLOW_ID: "7661077065991520308",
   BASE: "https://api.coze.cn"
 };
