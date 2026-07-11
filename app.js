@@ -80,10 +80,17 @@ function coverFallbackHTML(it) {
   return `<span class="cover-emoji">${coverEmoji(it)}</span>`;
 }
 
+function cardLinkUrl(it) {
+  // 优先用 Coze 返回的真实帖子链接
+  if (it.sourceUrl && it.sourceUrl.indexOf('xiaohongshu.com/explore') >= 0) return it.sourceUrl;
+  if (it.sourceUrl && it.sourceUrl.indexOf('xiaohongshu.com/') >= 0) return it.sourceUrl;
+  return xiaohongshuSearchUrl(it);
+}
+
 function coverCardHTML(it) {
   const img = it.image ? `<img src="${esc(it.image)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('noimg')">` : '';
   const play = it.format === 'video' ? `<div class="cover-play"><span class="play-icon">▶</span><span>视频</span></div>` : '';
-  const link = `<a class="cover-link" href="${esc(xiaohongshuSearchUrl(it))}" target="_blank" rel="noopener" aria-label="去小红书搜索">${LINK_ICON}</a>`;
+  const link = `<a class="cover-link" href="${esc(cardLinkUrl(it))}" target="_blank" rel="noopener" aria-label="打开原帖">${LINK_ICON}</a>`;
   const rank = `<div class="cover-rank ${it.rank <= 3 ? 'top' : ''}">${it.rank}</div>`;
   return `
     <div class="cover-card ${it.image ? '' : 'noimg'}" style="${it.image ? '' : 'background:' + coverBg(it)}">
@@ -176,11 +183,11 @@ function openDetail(id) {
       </div>
     </div>
 
-    <button class="copy-btn" id="openBtn">去小红书搜索 ↗</button>
-    <div class="action-tip">AI 没有真实原帖链接，这里会跳转到小红书搜索该标题</div>
+    <button class="copy-btn" id="openBtn">${item.sourceUrl ? '打开原帖 ↗' : '去小红书搜索 ↗'}</button>
+    <div class="action-tip">${item.sourceUrl ? '来自小红书真实帖子，点击跳转原帖' : '未获取到原帖链接，点击搜索相关标题'}</div>
   `;
 
-  $('#openBtn').addEventListener('click', () => window.open(xiaohongshuSearchUrl(item), '_blank'));
+  $('#openBtn').addEventListener('click', () => window.open(cardLinkUrl(item), '_blank'));
   show($('#modal'));
 }
 
@@ -211,22 +218,22 @@ async function generate() {
     const forceMock = params.has('mock');
     let report;
 
-    // 优先级：DeepSeek > Coze > 示例数据
-    if (!forceMock && window.DEEPSEEK_CONFIG && window.DEEPSEEK_CONFIG.API_KEY) {
+    // 优先级：Coze（真实小红书数据）> DeepSeek（AI生成）> 示例数据
+    if (!report && !forceMock && window.COZE_CONFIG && window.COZE_CONFIG.PAT) {
+      try {
+        report = await callCoze(track, date);
+        setSource(true, 'Coze（真实数据）');
+      } catch (e) {
+        console.warn('Coze 调用失败，回退到 DeepSeek：', e);
+        report = null;
+      }
+    }
+    if (!report && !forceMock && window.DEEPSEEK_CONFIG && window.DEEPSEEK_CONFIG.API_KEY) {
       try {
         report = await callDeepSeek(track);
         setSource(true, 'DeepSeek');
       } catch (e) {
         console.warn('DeepSeek 调用失败：', e);
-        report = null;
-      }
-    }
-    if (!report && !forceMock && window.COZE_CONFIG && window.COZE_CONFIG.PAT) {
-      try {
-        report = await callCoze(track, date);
-        setSource(true, 'Coze');
-      } catch (e) {
-        console.warn('Coze 调用失败，已回退到示例数据：', e);
         report = null;
       }
     }
